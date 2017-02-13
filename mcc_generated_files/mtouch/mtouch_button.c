@@ -43,9 +43,9 @@
 
 enum mtouch_button_state
 {
-    MTOUCH_BUTTON_STATE_initializing    = 0,
-    MTOUCH_BUTTON_STATE_notPressed      = 1,
-    MTOUCH_BUTTON_STATE_pressed         = 2
+    MTOUCH_BUTTON_STATE_initializing,
+    MTOUCH_BUTTON_STATE_notPressed,
+    MTOUCH_BUTTON_STATE_pressed,
 };
     
 /* 
@@ -108,7 +108,7 @@ static void                     Button_State_Pressed        (mtouch_button_t* bu
  * =======================================================================
  */
 typedef void (*button_statemachine_state_t)(mtouch_button_t*);
-button_statemachine_state_t Button_StateMachine[] = 
+const button_statemachine_state_t Button_StateMachine[] = 
 {
     Button_State_Initializing,
     Button_State_NotPressed,
@@ -154,10 +154,10 @@ void MTOUCH_Button_Service(enum mtouch_button_names name)
         Button_Reading_Update(button);
         Button_Deviation_Update(name);
 
-        if (button->state >= BUTTON_STATEMACHINE_COUNT)
-        {
-            MTOUCH_Button_Initialize(button->name);
-        }
+//        if (button->state >= BUTTON_STATEMACHINE_COUNT)
+//        {
+//            MTOUCH_Button_Initialize(button->name);
+//        }
         Button_StateMachine[button->state](button);
     }
 }
@@ -246,22 +246,8 @@ void MTOUCH_Button_Tick(void)
                 mtouch_button[i].counter = (mtouch_button_statecounter_t)0xFFFF;
             }
         }
-//        Button_Tick_helper(&mtouch_button[i]);
     }
 }
-//static void Button_Tick_helper(mtouch_button_t* button)
-//{
-//    /* Only pressed state counter is based on real time */
-//    if ((button->state) == MTOUCH_BUTTON_STATE_pressed)
-//    {
-//        (button->counter)++;
-//        if (button->counter == (mtouch_button_statecounter_t)0)
-//        {
-//            button->counter = (mtouch_button_statecounter_t)0xFFFF;
-//        }
-//    }
-//}
-//
 /*
  * =======================================================================
  * Button State and Deviation
@@ -329,19 +315,19 @@ static void Button_Deviation_Update(enum mtouch_button_names name)
     mtouch_button[name].deviation = devscaled;
 }
 
-//mtouch_buttonmask_t MTOUCH_Button_Buttonmask_Get(void)
-//{
-//    mtouch_buttonmask_t output = 0;
-//
-//    for (uint8_t i = 0; i < MTOUCH_SENSORS; i++)
-//    {
-//        if (MTOUCH_Button_isPressed(i) == true)
-//        {
-//            output |= (mtouch_buttonmask_t)0x01 << i;
-//        }
-//    }
-//    return output;
-//}
+mtouch_buttonmask_t MTOUCH_Button_Buttonmask_Get(void)
+{
+    mtouch_buttonmask_t output = 0;
+
+    for (uint8_t i = 0; i < MTOUCH_SENSORS; i++)
+    {
+        if (MTOUCH_Button_isPressed(i) == true)
+        {
+            output |= (mtouch_buttonmask_t)0x01 << i;
+        }
+    }
+    return output;
+}
  
 /*
  * =======================================================================
@@ -376,15 +362,11 @@ mtouch_button_reading_t MTOUCH_Button_Baseline_Get(enum mtouch_button_names name
     gie = INTCONbits.GIE;
     INTCONbits.GIE = (uint8_t)0;
 
-    baseline = Button_Baseline_Get_helper(name);
+    baseline = (mtouch_button_reading_t)((mtouch_button[name].baseline) >> MTOUCH_BUTTON_BASELINE_GAIN);
 
     if(gie == 1)
         INTCONbits.GIE = (uint8_t)1;
 
     return baseline;
-}
-static mtouch_button_reading_t Button_Baseline_Get_helper(enum mtouch_button_names name)
-{
-    return (mtouch_button_reading_t)((mtouch_button[name].baseline) >> MTOUCH_BUTTON_BASELINE_GAIN);
 }
 

@@ -46,7 +46,6 @@
 #include "mcc_generated_files/mcc.h"
 #include "mcc_generated_files/mtouch/mtouch_button.h"
 
-uint8_t buttonsState;
 volatile uint8_t ticks;
 
 const uint16_t expTable[] = {0 ,0 ,1 ,1 ,2 ,2 ,3 ,4 ,5 ,6 ,8 ,9 ,11 ,12 ,14 ,16 ,18 ,20 ,23 ,25
@@ -65,12 +64,11 @@ const uint16_t expTable[] = {0 ,0 ,1 ,1 ,2 ,2 ,3 ,4 ,5 ,6 ,8 ,9 ,11 ,12 ,14 ,16 
  */
 void main(void)
 {
-    uint8_t bs;
+    mtouch_buttonmask_t bs, buttonsState = 0;
     bool b = false;
     uint8_t tBtnUp, tBtnDown;
     uint16_t pwmDutyPeriod = MAX_PWM_PERIOD / 2;
     
-    buttonsState = 0;
     ticks = 0;
     // initialize the device
     SYSTEM_Initialize();
@@ -104,28 +102,31 @@ void main(void)
     Led2_SetLow();
     while (1)
     {
-        MTOUCH_Service_Mainloop();
-        // Add your application code
+        // TODO add some error indication
+        if(MTOUCH_Service_Mainloop() == false)
+            continue;
+        
         // save buttons state for press/release detection
         bs = buttonsState;
-        if(MTOUCH_Button_isInitialized(ButtonUp)) {
-            if(MTOUCH_Button_isPressed(ButtonUp)) {
-                Led1_SetHigh();
-                buttonsState |= 1 << ButtonUp;
-            } else {
-                Led1_SetLow();
-                buttonsState &= ~(1 << ButtonUp);
-            }
-        }
-        if(MTOUCH_Button_isInitialized(ButtonDown)) {
-            if(MTOUCH_Button_isPressed(ButtonDown)) {
-                Led2_SetHigh();
-                buttonsState |= 1 << ButtonDown;
-            } else {
-                Led2_SetLow();
-                buttonsState &= ~(1 << ButtonDown);
-            }
-        }
+        buttonsState = MTOUCH_Button_Buttonmask_Get();
+//        if(MTOUCH_Button_isInitialized(ButtonUp)) {
+//            if(MTOUCH_Button_isPressed(ButtonUp)) {
+//                Led1_SetHigh();
+//                buttonsState |= 1 << ButtonUp;
+//            } else {
+//                Led1_SetLow();
+//                buttonsState &= ~(1 << ButtonUp);
+//            }
+//        }
+//        if(MTOUCH_Button_isInitialized(ButtonDown)) {
+//            if(MTOUCH_Button_isPressed(ButtonDown)) {
+//                Led2_SetHigh();
+//                buttonsState |= 1 << ButtonDown;
+//            } else {
+//                Led2_SetLow();
+//                buttonsState &= ~(1 << ButtonDown);
+//            }
+//        }
         
         // check for change in button up state
 //        if((bs ^ buttonsState) & (1 << ButtonUp)) {
@@ -138,6 +139,18 @@ void main(void)
 //                EPWM_LoadDutyValue(expTable[pwmDutyPeriod]);
 //            }
 //        } else 
+        if(buttonsState & (1 << ButtonUp)) {
+            Led1_SetHigh();
+        } else {
+            Led1_SetLow();
+        }
+        
+        if(buttonsState & (1 << ButtonDown)) {
+            Led2_SetHigh();
+        } else {
+            Led2_SetLow();
+        }
+        
         if(buttonsState & (1 << ButtonUp) && (tBtnUp != ticks)) {
             // button kept pressed, and tick elapsed
             tBtnUp = ticks;

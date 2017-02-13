@@ -75,7 +75,7 @@ bool MTOUCH_Service_Mainloop(void)
 {
     if(Sensor_SampleAll() == false)     
         return false;           /* Please check the mtouch_sensor_error if Sensor_SampleAll() return false*/    
-    Button_ServiceAll();        /* Execute state machine for all buttons w/scanned sensors */
+    Button_ServiceAll();           /* Execute state machine for all buttons w/scanned sensors */
     MTOUCH_Sensor_Sampled_ResetAll();  
     MTOUCH_Tick();
     return true;

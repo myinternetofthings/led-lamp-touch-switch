@@ -164,26 +164,14 @@ void MTOUCH_Sensor_Scan_Initialize(void)
  */
 enum mtouch_sensor_error MTOUCH_Sensor_Service(enum mtouch_sensor_names sensor)
 {
-    enum mtouch_sensor_error error = Sensor_Acq_ExecutePacket(sensor);//Sensor_Acquisition(sensor);
+    enum mtouch_sensor_error error = Sensor_Acq_ExecutePacket(sensor);
 
     /* Validate sensor output. Handle errors. */
-//    switch(error)
-//    {
     if(error == MTOUCH_SENSOR_ERROR_none)
     {
         Sensor_RawSample_Update(sensor);
         Sensor_setSampled(sensor);
-//        callback_sampled(sensor);
     }
-//        break;
-
-//        case MTOUCH_SENSOR_ERROR_invalid_index:          break;
-//        case MTOUCH_SENSOR_ERROR_interrupt_notEnabled:   break;
-//        case MTOUCH_SENSOR_ERROR_invalid_calibrate:      break;
-        
-//        default: break;
-//    }
-
     return error;
 }
 inline void MTOUCH_Sensor_Sampled_ResetAll(){
@@ -335,7 +323,7 @@ mtouch_sensor_sample_t MTOUCH_Sensor_RawSample_Get(enum mtouch_sensor_names sens
     gie = INTCONbits.GIE;
     INTCONbits.GIE = (uint8_t)0;
     
-    sample = Sensor_RawSample_Get_helper(sensor);
+    sample = sensor_rawSample[sensor];
     
     if(gie == 1)
         INTCONbits.GIE = (uint8_t)1;
@@ -346,16 +334,12 @@ static void Sensor_RawSample_Update(enum mtouch_sensor_names sensor) /* Local */
 {
     gie = INTCONbits.GIE;
     INTCONbits.GIE = (uint8_t)0;
+ 
     sensor_rawSample[sensor] = packet_sample;
     
     if(gie == 1)
         INTCONbits.GIE = (uint8_t)1;
 }
-static mtouch_sensor_sample_t Sensor_RawSample_Get_helper(enum mtouch_sensor_names sensor) /* Local */
-{
-    return sensor_rawSample[sensor];
-}
-
 
 /*
  * =======================================================================
