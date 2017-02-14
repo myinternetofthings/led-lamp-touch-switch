@@ -281,10 +281,10 @@ bool MTOUCH_Button_isPressed(enum mtouch_button_names name)
     return (mtouch_button[name].state == MTOUCH_BUTTON_STATE_pressed) ? true : false;
 }
 
-bool MTOUCH_Button_isInitialized(enum mtouch_button_names name)
-{
-    return (mtouch_button[name].state == MTOUCH_BUTTON_STATE_initializing) ? false : true;
-}
+//bool MTOUCH_Button_isInitialized(enum mtouch_button_names name)
+//{
+//    return (mtouch_button[name].state == MTOUCH_BUTTON_STATE_initializing) ? false : true;
+//}
 
 //mtouch_button_deviation_t MTOUCH_Button_Deviation_Get(enum mtouch_button_names name) /* Global */
 //{

@@ -76,8 +76,8 @@ void EPWM_Initialize (void)
     // STR1D P1D_to_port; STR1C P1C_to_port; STR1B P1B_to_port; STR1A P1A_to_CCP1M; STR1SYNC start_at_begin; 
     PSTR1CON = 0x01;
     
-    // CCPR1L 127; 
-    CCPR1L = 0x7F;
+    // CCPR1L 0; 
+    CCPR1L = 0x00;
     
     // CCPR1H 0; 
     CCPR1H = 0x00;

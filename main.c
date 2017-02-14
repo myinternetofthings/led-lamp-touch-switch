@@ -46,7 +46,10 @@
 #include "mcc_generated_files/mcc.h"
 #include "mcc_generated_files/mtouch/mtouch_button.h"
 
-volatile uint8_t ticks;
+// ---------------------- constants ---------------------------
+
+#define SHORT_OFF_TICKS 5
+#define ON_GUARD_TICKS 20
 
 const uint16_t expTable[] = {0 ,0 ,1 ,1 ,2 ,2 ,3 ,4 ,5 ,6 ,8 ,9 ,11 ,12 ,14 ,16 ,18 ,20 ,23 ,25
  ,28 ,30 ,33 ,36 ,39 ,42 ,46 ,49 ,53 ,56 ,60 ,64 ,68 ,72 ,77 ,81 ,86 ,90 ,95 ,100 ,105 ,110 ,116
@@ -57,19 +60,34 @@ const uint16_t expTable[] = {0 ,0 ,1 ,1 ,2 ,2 ,3 ,4 ,5 ,6 ,8 ,9 ,11 ,12 ,14 ,16 
  ,900 ,915 ,930 ,946 ,961 ,977 ,992 ,1008 ,1023
 };
 
-#define MAX_PWM_PERIOD (sizeof(expTable) / sizeof(uint16_t) - 1)
+#define MAX_PWM_PERIOD_IDX (sizeof(expTable) / sizeof(uint16_t) - 1)
 
+// ------------------ global variables ------------------------
+volatile static struct
+{
+    unsigned    lampOnGuard:1;
+    unsigned    lampOn:1;
+    unsigned    pwmDirty:1;
+    unsigned    tickSync:1;
+} globalflags;
+
+volatile uint8_t ticks;
+
+// --------------------------------------------------------------
 /*
                          Main application
  */
 void main(void)
 {
     mtouch_buttonmask_t bs, buttonsState = 0;
-    bool b = false;
-    uint8_t tBtnUp, tBtnDown;
-    uint16_t pwmDutyPeriod = MAX_PWM_PERIOD / 2;
+    uint8_t pressTick;
+    uint16_t pwmDutyPeriod = MAX_PWM_PERIOD_IDX / 2;
     
     ticks = 0;
+    globalflags.lampOnGuard = 0;
+    globalflags.lampOn = 0;
+    globalflags.pwmDirty = 0;
+    globalflags.tickSync = 0;
     // initialize the device
     SYSTEM_Initialize();
 
@@ -106,39 +124,11 @@ void main(void)
         if(MTOUCH_Service_Mainloop() == false)
             continue;
         
-        // save buttons state for press/release detection
+        // save previous buttons state for press/release detection
         bs = buttonsState;
         buttonsState = MTOUCH_Button_Buttonmask_Get();
-//        if(MTOUCH_Button_isInitialized(ButtonUp)) {
-//            if(MTOUCH_Button_isPressed(ButtonUp)) {
-//                Led1_SetHigh();
-//                buttonsState |= 1 << ButtonUp;
-//            } else {
-//                Led1_SetLow();
-//                buttonsState &= ~(1 << ButtonUp);
-//            }
-//        }
-//        if(MTOUCH_Button_isInitialized(ButtonDown)) {
-//            if(MTOUCH_Button_isPressed(ButtonDown)) {
-//                Led2_SetHigh();
-//                buttonsState |= 1 << ButtonDown;
-//            } else {
-//                Led2_SetLow();
-//                buttonsState &= ~(1 << ButtonDown);
-//            }
-//        }
-        
-        // check for change in button up state
-//        if((bs ^ buttonsState) & (1 << ButtonUp)) {
-//            // timer snapshot if just pressed
-//            if(bs & (1 << ButtonUp)) {
-//                tBtnUp = ticks;
-//                // start increasing brightness
-//                if(pwmDutyPeriod < MAX_PWM_PERIOD)
-//                    pwmDutyPeriod++;
-//                EPWM_LoadDutyValue(expTable[pwmDutyPeriod]);
-//            }
-//        } else 
+
+        // show buttons state on leds
         if(buttonsState & (1 << ButtonUp)) {
             Led1_SetHigh();
         } else {
@@ -151,31 +141,65 @@ void main(void)
             Led2_SetLow();
         }
         
-        if(buttonsState & (1 << ButtonUp) && (tBtnUp != ticks)) {
-            // button kept pressed, and tick elapsed
-            tBtnUp = ticks;
-            if(pwmDutyPeriod < MAX_PWM_PERIOD)
-                pwmDutyPeriod++;
-            EPWM_LoadDutyValue(expTable[pwmDutyPeriod]);
+        // any button state changed
+        if(bs ^ buttonsState) {
+            if(buttonsState == 0) {
+                // all buttons depressed
+                // turn lamp off if depressed after very short period
+                // lamp can be turned on by short click
+                // guard time prevents lamp turning off in that case
+                if(ticks - pressTick <= SHORT_OFF_TICKS 
+                        && globalflags.lampOnGuard == false) {
+                    globalflags.lampOn = false;
+                    globalflags.pwmDirty = true;
+                }
+            } else {
+                // button just pressed, turn the lamp on
+                pressTick = ticks;
+                if(globalflags.lampOn == false) {
+                    globalflags.lampOn = true;
+                    globalflags.lampOnGuard = true;
+                }
+                globalflags.pwmDirty = true;
+            }
         }
         
-        // check for change in button down state
-//        if((bs ^ buttonsState) & (1 << ButtonDown)) {
-//            // timer snapshot if just pressed
-//            if(bs & (1 << ButtonDown)) {
-//                tBtnDown = ticks;
-//                // start decreasing brightness
-//                if(pwmDutyPeriod > 0)
-//                    pwmDutyPeriod--;
-//                EPWM_LoadDutyValue(expTable[pwmDutyPeriod]);
-//            }
-//        } else 
-        if(buttonsState & (1 << ButtonDown) && (tBtnDown != ticks)) {
-            // button kept pressed, and tick elapsed
-            tBtnDown = ticks;
-            if(pwmDutyPeriod > 0)
-                pwmDutyPeriod--;
-            EPWM_LoadDutyValue(expTable[pwmDutyPeriod]);
+        // ---------- synchronized to ticks ----------------
+        if(globalflags.tickSync) {
+            globalflags.tickSync = false;
+            
+            // guard time after short click turn on
+            if(globalflags.lampOn && globalflags.lampOnGuard
+                    && ticks - pressTick > ON_GUARD_TICKS) {
+                globalflags.lampOnGuard = false;
+            }
+
+            // update brightness when button is kept pressed
+            if(buttonsState & (1 << ButtonUp)) {
+                // button kept pressed, and tick elapsed
+                if(pwmDutyPeriod < MAX_PWM_PERIOD_IDX) {
+                    pwmDutyPeriod++;
+                    globalflags.pwmDirty = true;
+                }
+            }
+
+            if(buttonsState & (1 << ButtonDown)) {
+                // button kept pressed, and tick elapsed
+                if(pwmDutyPeriod > 0) {
+                    pwmDutyPeriod--;
+                    globalflags.pwmDirty = true;
+                }
+            }
+        }
+        // ---------------------------------------------------------
+        
+        // update pwm
+        if(globalflags.pwmDirty) {
+            globalflags.pwmDirty = false;
+            if(globalflags.lampOn)
+                EPWM_LoadDutyValue(0);
+            else
+                EPWM_LoadDutyValue(expTable[pwmDutyPeriod]);
         }
     }
 }
@@ -184,6 +208,9 @@ void main(void)
 // approx 40Hz
 void TMR2_CallBack(void) {
     ticks++;
+    // easy way to synchronized parts that have to be executed only once
+    // per tick
+    globalflags.tickSync = true;
 }
 /**
  End of File
