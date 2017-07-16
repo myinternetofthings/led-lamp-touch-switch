@@ -2,6 +2,7 @@
 Led lamp controller with touch dimmer function.
 There are 2 touch buttons that increase and decrease brightness. Brightness is controller via PWM output using power mosfet.
 Dimming function has 128 levels mapped via exponential function to 10bits of PWM.
+Pressing any button for less than about 0.5s turns lamp off. Pressing any button again turns lamp on with previous brightness level saved.
 
 Project is developed in MPLAB X IDE v3.51.
 Microcontroller used is Microchip PIC16F1823.
@@ -13,16 +14,19 @@ There is small board prepared, and sent to manufacturing by itead.cc.
 Schematic, and board was drew in Eagle. Files are in pcb folder.
 Production files are prepared in Prototype1.zip.
 
-I didn't get PCB yet, so it is not verified.
+Boards were manufactured in cheap prototyping pool in ITEAD.cc
+Here is a board assembled with dummy load connected:
+![Board with dummy load](/pcb/pcb_with_dummy_load.jpg)
 
-This is still work in progress.
-Right now circuit works on breadboard.
+Main tasks were completed, but this is still work in progress.
 
 ## Code statistics
-- data: 101/128 bytes used (79%)
-- code: 2021/2048 words used (99%)
+Compiled with free version of xc8 v1.40
+- data: 100/128 bytes used (78%)
+- code: 1988/2048 words used (97%)
 
 ## Next tasks:
-- optimize libraries further to make more place for application code.
-- add quick on/off function (right now brightness can be lowered to 0)
-- add schematic, and design PCB - done
+- [x] optimize libraries further to make more place for application code.
+- [x] add quick on/off function (right now brightness can be lowered to 0)
+- [x] add schematic, and design PCB
+- [ ] mount to bed with hidden touch buttons, and connect IKEA led lamps
