@@ -48,7 +48,7 @@
 
 // ---------------------- constants ---------------------------
 
-#define SHORT_OFF_TICKS 5
+#define SHORT_OFF_TICKS 20
 #define ON_GUARD_TICKS 20
 
 const uint16_t expTable[] = {0 ,0 ,1 ,1 ,2 ,2 ,3 ,4 ,5 ,6 ,8 ,9 ,11 ,12 ,14 ,16 ,18 ,20 ,23 ,25
@@ -71,7 +71,7 @@ volatile static struct
     unsigned    tickSync:1;
 } globalflags;
 
-volatile uint8_t ticks;
+volatile uint16_t ticks;
 
 // --------------------------------------------------------------
 /*
@@ -80,13 +80,13 @@ volatile uint8_t ticks;
 void main(void)
 {
     mtouch_buttonmask_t bs, buttonsState = 0;
-    uint8_t pressTick;
+    uint16_t pressTick;
     uint16_t pwmDutyPeriod = MAX_PWM_PERIOD_IDX / 2;
     
     ticks = 0;
     globalflags.lampOnGuard = 0;
     globalflags.lampOn = 0;
-    globalflags.pwmDirty = 0;
+    globalflags.pwmDirty = 1;
     globalflags.tickSync = 0;
     // initialize the device
     SYSTEM_Initialize();
@@ -169,7 +169,7 @@ void main(void)
             globalflags.tickSync = false;
             
             // guard time after short click turn on
-            if(globalflags.lampOn && globalflags.lampOnGuard
+            if(globalflags.lampOnGuard
                     && ticks - pressTick > ON_GUARD_TICKS) {
                 globalflags.lampOnGuard = false;
             }
@@ -196,7 +196,7 @@ void main(void)
         // update pwm
         if(globalflags.pwmDirty) {
             globalflags.pwmDirty = false;
-            if(globalflags.lampOn)
+            if(!globalflags.lampOn)
                 EPWM_LoadDutyValue(0);
             else
                 EPWM_LoadDutyValue(expTable[pwmDutyPeriod]);
