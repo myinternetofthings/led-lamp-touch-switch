@@ -37,12 +37,16 @@ I immediately blamed power transistor losses, because I used different type than
 First I thought that these are switching losses. I checked if transistor is turning on correctly, and it seemed fine. Just to be sure I lowered gate resistor to 11 Ohm.
 Then I correlated temperature rise with power output, and checked Rds_on (indirectly by measuring Vds with oscillosope, and looking on average current on power supply). This also looked ok.
 I lost couple hours before I noticed incorrect resistor value. It also helped to notice that the transistor case was unporportionaly colder than it should be at that high drain leads temperature. Probably source leads were sinking enough heat to keep plastic case cool.
+
 After all that I rised gate resistor back to 47 Ohms to prevent microcontroller output latchup (it's already quite stressed - peak current when turning on is around 100mA for 80ns).
+
 Here are Vd rise and fall waveforms:
 ![Vd turn on](/doc/Vd_turn_on.png) 
 ![Vd turn off](/doc/Vd_turn_off.png)
+
 Vg gate waveforms:
 ![Vg turn on](/doc/Vg_turn_on.png) 
 ![Vg turn off](/doc/Vg_turn_off.png)
+
 This is Vd, and I can't quite explain slow rise after turn off - possibly it's capacitance in LEDs.
 ![Vd waveform](/doc/Vd.png) 
