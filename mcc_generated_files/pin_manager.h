@@ -141,6 +141,8 @@
 #define RC5_SetPullup()     do { WPUCbits.WPUC5 = 1; } while(0)
 #define RC5_ResetPullup()   do { WPUCbits.WPUC5 = 0; } while(0)
 
+#define LedEn_SetHigh()            do { LATCbits. LATC4 = 1; } while(0)
+#define LedEn_SetLow()             do { LATCbits.LATC4 = 0; } while(0)
 /**
    @Param
     none

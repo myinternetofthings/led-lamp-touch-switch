@@ -51,7 +51,7 @@
 #define SHORT_OFF_TICKS 20
 #define ON_GUARD_TICKS 20
 
-const uint16_t expTable[] = {0 ,0 ,1 ,1 ,2 ,2 ,3 ,4 ,5 ,6 ,8 ,9 ,11 ,12 ,14 ,16 ,18 ,20 ,23 ,25
+const uint16_t expTable[] = {2 ,2 ,2 ,2 ,3 ,3 ,3 ,4 ,5 ,6 ,8 ,9 ,11 ,12 ,14 ,16 ,18 ,20 ,23 ,25
  ,28 ,30 ,33 ,36 ,39 ,42 ,46 ,49 ,53 ,56 ,60 ,64 ,68 ,72 ,77 ,81 ,86 ,90 ,95 ,100 ,105 ,110 ,116
  ,121 ,127 ,132 ,138 ,144 ,150 ,156 ,163 ,169 ,176 ,182 ,189 ,196 ,203 ,210 ,218 ,225 ,233 ,240
  ,248 ,256 ,264 ,272 ,281 ,289 ,298 ,306 ,315 ,324 ,333 ,342 ,352 ,361 ,371 ,380 ,390 ,400 ,410
@@ -118,6 +118,7 @@ void main(void)
 //    printf("---- Starting main loop ----");
     Led1_SetLow();
     Led2_SetLow();
+    LedEn_SetLow();
     while (1)
     {
         // TODO add some error indication
@@ -196,10 +197,13 @@ void main(void)
         // update pwm
         if(globalflags.pwmDirty) {
             globalflags.pwmDirty = false;
-            if(!globalflags.lampOn)
+            if(!globalflags.lampOn) {
+                LedEn_SetLow();
                 EPWM_LoadDutyValue(0);
-            else
+            } else {
                 EPWM_LoadDutyValue(expTable[pwmDutyPeriod]);
+                LedEn_SetHigh();
+            }
         }
     }
 }
